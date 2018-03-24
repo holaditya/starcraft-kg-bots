@@ -1,12 +1,12 @@
 from pysc2.agents.base_agent import BaseAgent
 
-from utils.epsilon import Epsilon
+from pytorch.utils.epsilon import Epsilon
 import time
 import math
 import numpy as np
 import copy
 import os.path
-from utils.replay_memory import ReplayMemory, Transition
+from pytorch.utils.replay_memory import ReplayMemory, Transition
 from collections import deque
 import matplotlib.pyplot as plt
 plt.ion()
@@ -58,8 +58,8 @@ class BaseRLAgent(BaseAgent):
   def __init__(self):
     super(BaseRLAgent, self).__init__()
     self.training = False
-    self.max_frames = 500000
-    self._epsilon = Epsilon(start=0.1, end=0.1, update_increment=0.01)
+    self.max_frames = 5000000
+    self._epsilon = Epsilon(start=1.0, end=0.1, update_increment=0.0001)
     self.gamma = 0.99
     self.train_q_per_step = 4
     self.train_q_batch_size = 256
@@ -102,7 +102,7 @@ class BaseRLAgent(BaseAgent):
 
 
   '''
-    :param 
+    :param
       s = obs.observation["screen"]
     :returns
       action = argmax action
@@ -188,11 +188,11 @@ class BaseRLAgent(BaseAgent):
 
           if total_frames % self.target_q_update_frequency == 0 and total_frames > self.steps_before_training and self._epsilon.isTraining:
             self._Qt = copy.deepcopy(self._Q)
-            self.show_chart()
+            #self.show_chart()
             # pass
 
           if not self._epsilon.isTraining and total_frames % 3 == 0:
-            self.show_chart()
+            #self.show_chart()
 
     except KeyboardInterrupt:
       pass
@@ -268,5 +268,3 @@ class BaseRLAgent(BaseAgent):
     self._optimizer.zero_grad()   # zero the gradient buffers
     loss.backward()
     self._optimizer.step()
-
-
