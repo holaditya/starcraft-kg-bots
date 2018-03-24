@@ -193,6 +193,7 @@ class BaseRLAgent(BaseAgent):
 
           if not self._epsilon.isTraining and total_frames % 3 == 0:
             #self.show_chart()
+            a = 1
 
     except KeyboardInterrupt:
       pass
