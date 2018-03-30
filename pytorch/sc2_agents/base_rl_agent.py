@@ -66,7 +66,7 @@ class BaseRLAgent(BaseAgent):
     self.steps_before_training = 10000
     self.target_q_update_frequency = 10000
 
-    self._Q_weights_path = "./data/SC2QAgent"
+    self._Q_weights_path = "./pytorch/data/SC2QAgent"
     self._Q = DQNCNN()
     if os.path.isfile(self._Q_weights_path):
       self._Q.load_state_dict(torch.load(self._Q_weights_path))
