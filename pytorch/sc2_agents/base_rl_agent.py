@@ -58,7 +58,7 @@ class BaseRLAgent(BaseAgent):
   def __init__(self):
     super(BaseRLAgent, self).__init__()
     self.training = False
-    self.max_frames = 5000000
+    self.max_frames = 10000000
     self._epsilon = Epsilon(start=1.0, end=0.1, update_increment=0.0001)
     self.gamma = 0.99
     self.train_q_per_step = 4
@@ -75,7 +75,7 @@ class BaseRLAgent(BaseAgent):
     self._Qt.cuda()
     self._optimizer = optim.Adam(self._Q.parameters(), lr=1e-8)
     self._criterion = nn.MSELoss()
-    self._memory = ReplayMemory(200000)
+    self._memory = ReplayMemory(50000)
 
     self._loss = deque(maxlen=1000)
     self._max_q = deque(maxlen=1000)
