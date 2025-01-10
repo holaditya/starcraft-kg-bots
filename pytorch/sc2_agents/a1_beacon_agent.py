@@ -24,7 +24,7 @@ class BeaconAgent(base_agent.BaseAgent):
   def step(self, obs):
     super(BeaconAgent, self).step(obs)
 
-    player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+    player_relative = obs.observation["feature_screen"][_PLAYER_RELATIVE]
     if _MOVE_SCREEN in obs.observation["available_actions"]:
       # return actions.FunctionCall(_NO_OP, [])
       neutral_y, neutral_x = (player_relative == _PLAYER_NEUTRAL).nonzero()

@@ -71,8 +71,8 @@ class BaseRLAgent(BaseAgent):
     if os.path.isfile(self._Q_weights_path):
       self._Q.load_state_dict(torch.load(self._Q_weights_path))
     self._Qt = copy.deepcopy(self._Q)
-    self._Q.cuda()
-    self._Qt.cuda()
+    # self._Q.cuda()
+    # self._Qt.cuda()
     self._optimizer = optim.Adam(self._Q.parameters(), lr=1e-8)
     self._criterion = nn.MSELoss()
     self._memory = ReplayMemory(50000)
@@ -84,9 +84,10 @@ class BaseRLAgent(BaseAgent):
     self._fig = plt.figure()
     self._plot = [plt.subplot(2, 2, i+1) for i in range(4)]
 
-    self._screen_size = 28
+    self._screen_size = 84
 
   def get_env_action(self, action, obs):
+    #import ipdb; ipdb.set_trace()
     action = np.unravel_index(action, [1, self._screen_size, self._screen_size])
     target = [action[2], action[1]]
     command = _MOVE_SCREEN #action[0]   # removing unit selection out of the equation
@@ -111,7 +112,9 @@ class BaseRLAgent(BaseAgent):
     # greedy
     if np.random.rand() > self._epsilon.value():
       # print("greedy action")
-      s = Variable(torch.from_numpy(s).cuda())
+      # s = Variable(torch.from_numpy(s).cuda())
+      s = Variable(torch.from_numpy(s))
+
       s = s.unsqueeze(0).float()
       self._action = self._Q(s).squeeze().cpu().data.numpy()
       return self._action.argmax()
@@ -124,7 +127,8 @@ class BaseRLAgent(BaseAgent):
       return action * self._screen_size*self._screen_size + target[0] * self._screen_size + target[1]
 
   def select_friendly_action(self, obs):
-    player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
+
+    player_relative = obs.observation["feature_screen"][_PLAYER_RELATIVE]
     friendly_y, friendly_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
     target = [int(friendly_x.mean()), int(friendly_y.mean())]
     return actions.FunctionCall(_SELECT_POINT, [[0], target])
@@ -159,8 +163,8 @@ class BaseRLAgent(BaseAgent):
         while True:
           total_frames += 1
 
-          self._screen = obs.observation["screen"][5]
-          s = np.expand_dims(obs.observation["screen"][5], 0)
+          self._screen = obs.observation["feature_screen"][5]
+          s = np.expand_dims(obs.observation["feature_screen"][5], 0)
           # plt.imshow(s[5])
           # plt.pause(0.00001)
           if max_frames and total_frames >= max_frames:
@@ -176,7 +180,7 @@ class BaseRLAgent(BaseAgent):
           obs = env.step([env_actions])[0]
 
           r = obs.reward
-          s1 = np.expand_dims(obs.observation["screen"][5], 0)
+          s1 = np.expand_dims(obs.observation["feature_screen"][5], 0)
           done = r > 0
           if self._epsilon.isTraining:
             transition = Transition(s, action, s1, r, done)
@@ -242,11 +246,20 @@ class BaseRLAgent(BaseAgent):
       return
 
     s, a, s_1, r, done = self._memory.sample(self.train_q_batch_size)
-    s = Variable(torch.from_numpy(s).cuda()).float()
-    a = Variable(torch.from_numpy(a).cuda()).long().unsqueeze(1)
-    s_1 = Variable(torch.from_numpy(s_1).cuda(), volatile=True).float()
-    r = Variable(torch.from_numpy(r).cuda()).float()
-    done = Variable(torch.from_numpy(1 - done).cuda()).float()
+    # s = Variable(torch.from_numpy(s).cuda()).float()
+    s = Variable(torch.from_numpy(s)).float()
+
+    #a = Variable(torch.from_numpy(a).cuda()).long().unsqueeze(1)
+    a = Variable(torch.from_numpy(a)).long().unsqueeze(1)
+
+    #s_1 = Variable(torch.from_numpy(s_1).cuda(), volatile=True).float()
+    s_1 = Variable(torch.from_numpy(s_1), volatile=True).float()
+
+    # r = Variable(torch.from_numpy(r).cuda()).float()
+    r = Variable(torch.from_numpy(r)).float()
+
+   # done = Variable(torch.from_numpy(1 - done).cuda()).float()
+    done = Variable(torch.from_numpy(1 - done)).float()
 
     # Q_sa = r + gamma * max(Q_s'a')
     Q = self._Q(s)
