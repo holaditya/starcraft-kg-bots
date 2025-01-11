@@ -59,21 +59,29 @@ class BaseRLAgent(BaseAgent):
     super(BaseRLAgent, self).__init__()
     self.training = False
     self.max_frames = 10000000
-    self._epsilon = Epsilon(start=1.0, end=0.1, update_increment=0.0001)
+    self._epsilon = Epsilon(start=1.0, end=0.1, update_increment=0.01)
+    # self._epsilon = 0.1
+
     self.gamma = 0.99
     self.train_q_per_step = 4
     self.train_q_batch_size = 256
-    self.steps_before_training = 10000
-    self.target_q_update_frequency = 10000
+    self.steps_before_training = 100
+    self.target_q_update_frequency = 100
 
     self._Q_weights_path = "./data/SC2QAgent"
     self._Q = DQNCNN()
     if os.path.isfile(self._Q_weights_path):
       self._Q.load_state_dict(torch.load(self._Q_weights_path))
     self._Qt = copy.deepcopy(self._Q)
+<<<<<<< Updated upstream
     self._Q.cuda()
     self._Qt.cuda()
     self._optimizer = optim.Adam(self._Q.parameters(), lr=1e-8)
+=======
+    # self._Q.cuda()
+    # self._Qt.cuda()
+    self._optimizer = optim.Adam(self._Q.parameters(), lr=1e-3)
+>>>>>>> Stashed changes
     self._criterion = nn.MSELoss()
     self._memory = ReplayMemory(50000)
 
@@ -109,9 +117,19 @@ class BaseRLAgent(BaseAgent):
   '''
   def get_action(self, s):
     # greedy
+<<<<<<< Updated upstream
     if np.random.rand() > self._epsilon.value():
       # print("greedy action")
       s = Variable(torch.from_numpy(s).cuda())
+=======
+    eps = self._epsilon.value()
+
+    if np.random.rand() > eps:
+      print("thoughtful action")
+      # s = Variable(torch.from_numpy(s).cuda())
+      s = Variable(torch.from_numpy(s))
+
+>>>>>>> Stashed changes
       s = s.unsqueeze(0).float()
       self._action = self._Q(s).squeeze().cpu().data.numpy()
       return self._action.argmax()
@@ -119,9 +137,12 @@ class BaseRLAgent(BaseAgent):
     else:
       # print("random choice")
       # action = np.random.choice([0, 1])
-      action = 0
+      # action = 0
+      # target = np.random.randint(0, self._screen_size, size=2)
+      # return action * self._screen_size*self._screen_size + target[0] * self._screen_size + target[1]
+      #print("taking rabdom action")
       target = np.random.randint(0, self._screen_size, size=2)
-      return action * self._screen_size*self._screen_size + target[0] * self._screen_size + target[1]
+      return target[0] * self._screen_size + target[1]
 
   def select_friendly_action(self, obs):
     player_relative = obs.observation["screen"][_PLAYER_RELATIVE]
@@ -138,6 +159,7 @@ class BaseRLAgent(BaseAgent):
 
   def run_loop(self, env, max_frames=0):
     """A run loop to have agents and an environment interact."""
+    print("~~~ Starting run loop ~~~")
     total_frames = 0
     start_time = time.time()
 
@@ -172,6 +194,7 @@ class BaseRLAgent(BaseAgent):
             break
 
           action = self.get_action(s)
+         # print(f"Chosen action is : {action}")
           env_actions = self.get_env_action(action, obs)
           obs = env.step([env_actions])[0]
 
@@ -253,19 +276,35 @@ class BaseRLAgent(BaseAgent):
     Q = Q.view(self.train_q_batch_size, -1)
     Q = Q.gather(1, a)
 
-    Qt = self._Qt(s_1).view(self.train_q_batch_size, -1)
+    with torch.no_grad():
+      Qt = self._Qt(s_1).view(self.train_q_batch_size, -1)
+      best_action = self._Q(s_1).view(self.train_q_batch_size, -1).max(dim=1, keepdim=True)[1]
+      y = r + done * self.gamma * Qt.gather(1, best_action)
 
-    # double Q
-    best_action = self._Q(s_1).view(self.train_q_batch_size, -1).max(dim=1, keepdim=True)[1]
-    y = r + done * self.gamma * Qt.gather(1, best_action)
+
     # Q
     # y = r + done * self.gamma * Qt.max(dim=1)[0].unsqueeze(1)
-
-    y.volatile = False
-
     loss = self._criterion(Q, y)
+    #print("Q-values before update:", Q)
+
+
+
     self._loss.append(loss.sum().cpu().data.numpy())
-    self._max_q.append(Q.max().cpu().data.numpy()[0])
+    self._max_q.append(Q.max().cpu().data.numpy())
     self._optimizer.zero_grad()   # zero the gradient buffers
     loss.backward()
+
+    q_table_updated = False
+
+    # Check if gradients are non-zero
+
+    for param in self._Q.parameters():
+      if param.grad is not None and param.grad.abs().sum() > 0:
+        q_table_updated = True
+        break
+
     self._optimizer.step()
+    if q_table_updated:
+        print("Q table updated")
+
+

@@ -14,8 +14,13 @@ from pytorch.sc2_agents.base_rl_agent import BaseRLAgent as Agent
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool("render", False, "Whether to render with pygame.")
+<<<<<<< Updated upstream
 flags.DEFINE_bool("train", False, "Whether we are training or running")
 flags.DEFINE_integer("screen_resolution", 28,
+=======
+flags.DEFINE_bool("train", True, "Whether we are training or running")
+flags.DEFINE_integer("screen_resolution", 84,
+>>>>>>> Stashed changes
                      "Resolution for screen feature layers.")
 flags.DEFINE_integer("minimap_resolution", 64,
                      "Resolution for minimap feature layers.")
